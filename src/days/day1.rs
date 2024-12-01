@@ -10,10 +10,10 @@ fn get_input() -> (Vec<isize>, Vec<isize>) {
     input
         .trim()
         .lines()
-        .fold((vec![0], vec![0]), |mut acc, line| {
+        .fold((vec![], vec![]), |mut acc, line| {
             let numbers = line.split_whitespace().collect_vec();
-            acc.0.push(numbers[0].parse().unwrap_or_default());
-            acc.1.push(numbers[1].parse().unwrap_or_default());
+            acc.0.push(numbers[0].parse().unwrap());
+            acc.1.push(numbers[1].parse().unwrap());
             acc
         })
 }
@@ -31,5 +31,21 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let (mut first_list, mut second_list) = get_input();
+    let mut similarity_score = 0;
+    first_list.sort();
+    second_list.sort_by(|a, b| b.cmp(a));
+    println!("{}, {:?}", first_list[0], second_list.last());
+    for first_num in first_list {
+        let mut count = 0;
+        while !second_list.is_empty() && second_list.last().unwrap() <= &first_num {
+            let second_num = second_list.pop().unwrap();
+            if second_num == first_num {
+                count += 1;
+            }
+        }
+        similarity_score += count * first_num;
+    }
+    println!("Total Similarity Score is {:?}", similarity_score);
+    Ok(())
 }
