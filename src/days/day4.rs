@@ -78,5 +78,62 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let word_search = get_input();
+
+    let mut xmas_count = 0;
+
+    let checker = |coordinate: (usize, usize), target: char| {
+        if let Some(line) = word_search.get(coordinate.0) {
+            if let Some(character) = line.get(coordinate.1) {
+                if *character == target {
+                    return true;
+                }
+            }
+        }
+        false
+    };
+
+    for (i, line) in word_search.iter().enumerate() {
+        for (j, character) in line.iter().enumerate() {
+            if *character != 'A' {
+                continue;
+            }
+            let mut directions = vec![(1, 1), (-1, -1), (1, -1), (-1, 1)];
+            directions.retain(|dir| {
+                let previous = (-dir.0, -dir.1);
+                let m_coord = (
+                    match previous.0 {
+                        -1 => i.wrapping_sub(1),
+                        1 => i + 1,
+                        _ => unreachable!(),
+                    },
+                    match previous.1 {
+                        -1 => j.wrapping_sub(1),
+                        1 => j + 1,
+                        _ => unreachable!(),
+                    },
+                );
+                let s_coord = (
+                    match dir.0 {
+                        -1 => i.wrapping_sub(1),
+                        1 => i + 1,
+                        _ => unreachable!(),
+                    },
+                    match dir.1 {
+                        -1 => j.wrapping_sub(1),
+                        1 => j + 1,
+                        _ => unreachable!(),
+                    },
+                );
+                checker(m_coord, 'M') && checker(s_coord, 'S')
+            });
+            if directions.len() == 2 {
+                xmas_count += 1;
+            }
+        }
+    }
+
+    println!("There are {} X-MAS in the input", xmas_count);
+
+    Ok(())
 }
