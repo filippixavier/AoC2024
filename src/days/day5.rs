@@ -38,8 +38,10 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 
     'update: for update in updates.iter() {
         for ordering in ordering_rules.iter() {
-            if let Some(before) = update.iter().find_position(|&elem| *elem == ordering[0]) {
-                if let Some(after) = update.iter().find_position(|&elem| *elem == ordering[1]) {
+            // For some reasons, it kinda worked with the whole tuple
+            if let Some((before, _)) = update.iter().find_position(|&elem| *elem == ordering[0]) {
+                if let Some((after, _)) = update.iter().find_position(|&elem| *elem == ordering[1])
+                {
                     if before > after {
                         continue 'update;
                     }
@@ -57,5 +59,39 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let (ordering_rules, mut updates) = get_input();
+    let mut total_page = 0;
+
+    for update in updates.iter_mut() {
+        let mut was_unordered = false;
+        loop {
+            let mut reorder = false;
+            for ordering in ordering_rules.iter() {
+                if let Some((before, _)) = update.iter().find_position(|&elem| *elem == ordering[0])
+                {
+                    if let Some((after, _)) =
+                        update.iter().find_position(|&elem| *elem == ordering[1])
+                    {
+                        if before > after {
+                            was_unordered = true;
+                            reorder = true;
+                            update[before] = ordering[1];
+                            update[after] = ordering[0];
+                        }
+                    }
+                }
+            }
+            if !reorder {
+                break;
+            }
+        }
+        if was_unordered {
+            total_page += update[update.len() / 2];
+        }
+    }
+    println!(
+        "The sum of middle page value from every incorrectly ordered update after reordering is {}",
+        total_page
+    );
+    Ok(())
 }
