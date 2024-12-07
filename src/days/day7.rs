@@ -21,7 +21,7 @@ fn get_input() -> Vec<(usize, Vec<usize>)> {
         .collect()
 }
 
-fn calc(target: usize, current: usize, remaining: &[usize]) -> bool {
+fn calc(target: usize, current: usize, remaining: &[usize], use_concat: bool) -> bool {
     if remaining.is_empty() {
         return target == current;
     }
@@ -30,11 +30,19 @@ fn calc(target: usize, current: usize, remaining: &[usize]) -> bool {
     let mut result = false;
 
     if next + current <= target {
-        result = result || calc(target, next + current, &remaining[1..]);
+        result = result || calc(target, next + current, &remaining[1..], use_concat);
     }
 
-    if next * current <= target {
-        result = result || calc(target, next * current, &remaining[1..]);
+    if !result && next * current <= target {
+        result = result || calc(target, next * current, &remaining[1..], use_concat);
+    }
+
+    if use_concat {
+        let concat = current * 10usize.pow(usize::ilog10(next) + 1) + next;
+
+        if !result && concat <= target {
+            result = result || calc(target, concat, &remaining[1..], use_concat);
+        }
     }
 
     result
@@ -44,7 +52,7 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
     let input = get_input();
     let mut total = 0;
     for (target, values) in input {
-        if calc(target, values[0], &values[1..]) {
+        if calc(target, values[0], &values[1..], false) {
             total += target;
         }
     }
@@ -53,5 +61,16 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let input = get_input();
+    let mut total = 0;
+    for (target, values) in input {
+        if calc(target, values[0], &values[1..], true) {
+            total += target;
+        }
+    }
+    println!(
+        "Including concatenation, the total calibration result is {}",
+        total
+    );
+    Ok(())
 }
