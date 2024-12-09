@@ -60,5 +60,72 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let memblocks = get_input();
+    let mut max_file_index: usize = 0;
+
+    // Vec of (chunk_id, chunk_size, is_file) where chunk_id is 0 when chunk is not a file
+    let mut mem_map: Vec<(usize, usize, bool)> = memblocks
+        .into_iter()
+        .enumerate()
+        .map(|(index, val)| {
+            if index % 2 == 0 {
+                max_file_index = index / 2;
+                (index / 2, val as usize, true)
+            } else {
+                (0, val as usize, false)
+            }
+        })
+        .collect();
+
+    // We will never move the file with id 0
+    for i in (1..=max_file_index).rev() {
+        let (index_of_movable_chunk, (_, occupation, _)) = mem_map
+            .iter()
+            .find_position(|(chunk_id, _, is_file)| *is_file && *chunk_id == i)
+            .unwrap();
+        let mut new_mem_map = vec![];
+
+        let mut chunk_moved = false;
+
+        for (index, (chunk_id, chunk_occ, is_file)) in mem_map.iter().enumerate() {
+            if *is_file {
+                if *chunk_id != i || !chunk_moved {
+                    new_mem_map.push((*chunk_id, *chunk_occ, *is_file));
+                } else {
+                    let (_, occ, _) = new_mem_map.last_mut().unwrap();
+                    *occ += chunk_occ;
+                }
+            } else if index > index_of_movable_chunk || *chunk_occ < *occupation || chunk_moved {
+                new_mem_map.push((*chunk_id, *chunk_occ, *is_file));
+            } else {
+                chunk_moved = true;
+                new_mem_map.push((0, 0, false));
+                new_mem_map.push((i, *occupation, true));
+                new_mem_map.push((0, chunk_occ - occupation, false));
+            }
+        }
+
+        mem_map = new_mem_map;
+    }
+
+    let (_, total) = mem_map
+        .into_iter()
+        .fold((0, 0), |(i, sum), (id, occupation, is_file)| {
+            if !is_file {
+                (i + occupation, sum)
+            } else {
+                let mut file_sum = 0;
+                for j in i..(i + occupation) {
+                    file_sum += j * id;
+                }
+                (i + occupation, sum + file_sum)
+            }
+        });
+
+    println!(
+        "After \"proper\" defragmenting, the filesystem checksum is {}",
+        total
+    );
+
+    Ok(())
 }
