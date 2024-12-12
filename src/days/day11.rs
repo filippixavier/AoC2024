@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{collections::HashMap, error::Error};
 
 const INPUT: &str = include_str!("../../input/day11.input");
 
@@ -40,5 +40,34 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let mut stones: HashMap<usize, usize> = get_input()
+        .into_iter()
+        .map(|value| (value, 1))
+        .collect::<HashMap<usize, usize>>();
+
+    for _ in 0..75 {
+        let mut next_stones = HashMap::new();
+        for (stone, count) in stones {
+            let stone_str = stone.to_string();
+            let blinked_stones = if stone == 0 {
+                vec![1]
+            } else if stone_str.len() % 2 == 0 {
+                let split = stone_str.split_at(stone_str.len() / 2);
+                let left_stone = split.0.parse::<usize>().unwrap();
+                let right_stone = split.1.parse::<usize>().unwrap();
+                vec![left_stone, right_stone]
+            } else {
+                vec![stone * 2024]
+            };
+            for blink in blinked_stones {
+                let next_count = next_stones.entry(blink).or_default();
+                *next_count += count;
+            }
+        }
+        stones = next_stones;
+    }
+
+    let score: usize = stones.values().sum();
+    println!("After blinking *75* times, there are {} stones", score);
+    Ok(())
 }
