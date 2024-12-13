@@ -92,5 +92,19 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let machines = get_input();
+    let mut tokens = 0;
+    for mut machine in machines {
+        machine.prize.0 += 10_000_000_000_000;
+        machine.prize.1 += 10_000_000_000_000;
+        if let Some((button_a, button_b)) = machine.solve() {
+            tokens += button_a * 3 + button_b;
+        }
+    }
+
+    println!(
+        "After the *small* adjustement, we need to spend at least {} tokens",
+        tokens
+    );
+    Ok(())
 }
