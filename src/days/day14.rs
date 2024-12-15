@@ -1,5 +1,6 @@
 use regex::Regex;
 use std::error::Error;
+use std::io::{self};
 
 const INPUT: &str = include_str!("../../input/day14.input");
 const WIDTH: isize = 101;
@@ -70,6 +71,67 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
     Ok(())
 }
 
+fn display(robots: &[Robot]) {
+    for line in 0..HEIGHT {
+        for col in 0..WIDTH {
+            let count = robots.iter().fold(0, |acc, robot| {
+                if robot.position.0 == col && robot.position.1 == line {
+                    acc + 1
+                } else {
+                    acc
+                }
+            });
+            print!(
+                "{}",
+                if count == 0 {
+                    String::from(".")
+                } else {
+                    count.to_string()
+                }
+            );
+        }
+        println!();
+    }
+}
+
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let mut robots = get_input();
+    let mut seconds = HEIGHT + 1;
+    // I expect it to only work with my input
+    // While looking at the positions frame by frame, I've noticed some patterns reocuring every HEIGHT iteration and every WIDTH iterations
+    let steps = HEIGHT;
+
+    for robot in robots.iter_mut() {
+        robot.next_position(1);
+    }
+
+    display(&robots);
+    loop {
+        let displaying = true;
+        for robot in robots.iter_mut() {
+            robot.next_position(steps);
+        }
+
+        if displaying {
+            let mut buffer = String::new();
+            println!("{}:", seconds);
+            display(&robots);
+            println!("Keep running? Y/N");
+            match io::stdin().read_line(&mut buffer) {
+                Ok(_) => {
+                    let test = buffer.chars().next().unwrap_or('N');
+                    if test == 'N' {
+                        break;
+                    }
+                }
+                Err(error) => {
+                    println!("Error: {}", error);
+                    break;
+                }
+            }
+        }
+        seconds += steps;
+    }
+    println!("Easter egg displaying at {} seconds", seconds);
+    Ok(())
 }
