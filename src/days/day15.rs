@@ -9,6 +9,8 @@ enum Tile {
     Wall,
     Empty,
     Crate,
+    BigCrateLeft,
+    BigCrateRight,
 }
 
 use Tile::*;
@@ -92,6 +94,7 @@ fn try_move(movement: &Move, position: (usize, usize), warehouse: &mut Warehouse
             }
         }
         Wall => false,
+        _ => unreachable!(),
     }
 }
 
@@ -107,6 +110,8 @@ fn display(warehouse: &Warehouse, robot: (usize, usize)) {
                         Wall => '#',
                         Crate => 'O',
                         Empty => '.',
+                        BigCrateLeft => '[',
+                        BigCrateRight => ']',
                     }
                 );
             }
@@ -127,9 +132,9 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
                 Right => (position.0, position.1 + 1),
             };
         }
-        // display(&warehouse, position);
     }
 
+    display(&warehouse, position);
     let mut gps = 0;
 
     for (line_no, line) in warehouse.iter().enumerate() {
@@ -145,6 +150,147 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
     Ok(())
 }
 
+fn enlarge_warehouse(small_warehouse: Warehouse) -> Warehouse {
+    let mut larger_warehouse = vec![];
+    for line in small_warehouse {
+        let mut larger_line = vec![];
+        for tile in line {
+            if let Crate = tile {
+                larger_line.push(BigCrateLeft);
+                larger_line.push(BigCrateRight);
+            } else {
+                larger_line.push(tile);
+                larger_line.push(tile);
+            }
+        }
+        larger_warehouse.push(larger_line);
+    }
+    larger_warehouse
+}
+
+fn try_move_larger_crates(
+    movement: &Move,
+    position: (usize, usize),
+    warehouse: &mut Warehouse,
+    apply: bool,
+) -> bool {
+    let neighbor_pos = match movement {
+        Up => (position.0 - 1, position.1),
+        Down => (position.0 + 1, position.1),
+        Left => (position.0, position.1 - 1),
+        Right => (position.0, position.1 + 1),
+    };
+    match warehouse[neighbor_pos.0][neighbor_pos.1] {
+        Empty => {
+            if apply {
+                warehouse[neighbor_pos.0][neighbor_pos.1] = warehouse[position.0][position.1];
+                warehouse[position.0][position.1] = Empty;
+            }
+            true
+        }
+        Wall => false,
+        BigCrateLeft => match movement {
+            Up | Down => {
+                if try_move_larger_crates(movement, neighbor_pos, warehouse, apply)
+                    & try_move_larger_crates(
+                        movement,
+                        (neighbor_pos.0, neighbor_pos.1 + 1),
+                        warehouse,
+                        apply,
+                    )
+                {
+                    if apply {
+                        warehouse[neighbor_pos.0][neighbor_pos.1] =
+                            warehouse[position.0][position.1];
+                        warehouse[position.0][position.1] = Empty;
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => {
+                if try_move_larger_crates(movement, neighbor_pos, warehouse, apply) {
+                    if apply {
+                        warehouse[neighbor_pos.0][neighbor_pos.1] =
+                            warehouse[position.0][position.1];
+                        warehouse[position.0][position.1] = Empty;
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
+        },
+        BigCrateRight => match movement {
+            Up | Down => {
+                if try_move_larger_crates(movement, neighbor_pos, warehouse, apply)
+                    & try_move_larger_crates(
+                        movement,
+                        (neighbor_pos.0, neighbor_pos.1 - 1),
+                        warehouse,
+                        apply,
+                    )
+                {
+                    if apply {
+                        warehouse[neighbor_pos.0][neighbor_pos.1] =
+                            warehouse[position.0][position.1];
+                        warehouse[position.0][position.1] = Empty;
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => {
+                if try_move_larger_crates(movement, neighbor_pos, warehouse, apply) {
+                    if apply {
+                        warehouse[neighbor_pos.0][neighbor_pos.1] =
+                            warehouse[position.0][position.1];
+                        warehouse[position.0][position.1] = Empty;
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
+        },
+        _ => unreachable!(),
+    }
+}
+
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let (warehouse, mut position, movements) = get_input();
+    let mut larger_warehouse = enlarge_warehouse(warehouse);
+    position.1 *= 2;
+
+    for movement in movements {
+        if try_move_larger_crates(&movement, position, &mut larger_warehouse, false) {
+            try_move_larger_crates(&movement, position, &mut larger_warehouse, true);
+            position = match movement {
+                Up => (position.0 - 1, position.1),
+                Down => (position.0 + 1, position.1),
+                Left => (position.0, position.1 - 1),
+                Right => (position.0, position.1 + 1),
+            };
+        }
+    }
+    display(&larger_warehouse, position);
+
+    let mut gps = 0;
+
+    for (line_no, line) in larger_warehouse.iter().enumerate() {
+        for (col_no, elem) in line.iter().enumerate() {
+            if let BigCrateLeft = elem {
+                gps += 100 * line_no + col_no
+            }
+        }
+    }
+
+    println!(
+        "The sum of all gps coordinates in the larger warehouse is: {}",
+        gps
+    );
+
+    Ok(())
 }
