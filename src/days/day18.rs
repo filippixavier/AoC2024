@@ -54,5 +54,49 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let walls_coordinates = get_input();
+    let end = (70, 70);
+    let mut walls: HashSet<Coordinate> = HashSet::new();
+
+    for wall in walls_coordinates {
+        walls.insert(wall);
+
+        let mut visited: HashSet<Coordinate> = HashSet::new();
+        let mut possible = VecDeque::<(Coordinate, usize)>::new();
+        possible.push_front(((0, 0), 0));
+        let mut escape = false;
+
+        while let Some((coordinate, steps)) = possible.pop_front() {
+            if !visited.insert(coordinate) {
+                continue;
+            }
+            if coordinate == end {
+                escape = true;
+                break;
+            }
+
+            let neighbors = [
+                (coordinate.0.wrapping_sub(1), coordinate.1),
+                (coordinate.0, coordinate.1 + 1),
+                (coordinate.0 + 1, coordinate.1),
+                (coordinate.0, coordinate.1.wrapping_sub(1)),
+            ];
+
+            for neighbor in neighbors {
+                if neighbor.0 <= end.0 && neighbor.1 <= end.1 && !walls.contains(&neighbor) {
+                    possible.push_back((neighbor, steps + 1));
+                }
+            }
+        }
+
+        if !escape {
+            println!(
+                "Once {:?} is corrupted, there will be no more escape routes",
+                wall
+            );
+            break;
+        }
+    }
+
+    Ok(())
 }
