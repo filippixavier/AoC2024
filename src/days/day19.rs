@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{collections::HashMap, collections::HashSet, error::Error};
 
 const INPUT: &str = include_str!("../../input/day19.input");
 
@@ -23,7 +23,12 @@ fn get_input() -> (Vec<String>, Vec<String>) {
 fn is_possible(pattern: String, towels: &[String], max_towel_size: usize) -> bool {
     let mut start_index: Vec<usize> = vec![0];
 
+    let mut covered: HashSet<usize> = HashSet::new();
+
     while let Some(position) = start_index.pop() {
+        if !covered.insert(position) {
+            continue;
+        }
         let sub_patterns = (0..max_towel_size)
             .filter_map(|step| {
                 if step + position < pattern.len() {
@@ -37,8 +42,9 @@ fn is_possible(pattern: String, towels: &[String], max_towel_size: usize) -> boo
             if towels.contains(&sub_pattern) {
                 if position + sub_pattern.len() == pattern.len() {
                     return true;
+                } else {
+                    start_index.push(position + sub_pattern.len());
                 }
-                start_index.push(position + sub_pattern.len());
             }
         }
     }
@@ -67,6 +73,65 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
     Ok(())
 }
 
+fn recurse_possible(
+    pattern: &String,
+    position: usize,
+    towels: &[String],
+    max_towel_size: usize,
+    memoize: &mut HashMap<usize, usize>,
+) -> usize {
+    if let Some(memoized) = memoize.get(&position) {
+        return *memoized;
+    }
+
+    let mut count = 0;
+    let sub_patterns = (0..max_towel_size)
+        .filter_map(|step| {
+            if step + position < pattern.len() {
+                Some(pattern[position..=position + step].to_string())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+    for sub_pattern in sub_patterns {
+        if towels.contains(&sub_pattern) {
+            if position + sub_pattern.len() == pattern.len() {
+                count += 1;
+            } else {
+                count += recurse_possible(
+                    pattern,
+                    position + sub_pattern.len(),
+                    towels,
+                    max_towel_size,
+                    memoize,
+                );
+            }
+        }
+    }
+
+    memoize.insert(position, count);
+    count
+}
+
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let (towels, patterns) = get_input();
+    let max_stripes = towels
+        .iter()
+        .max_by(|a, b| a.len().cmp(&b.len()))
+        .unwrap()
+        .len();
+
+    let mut possible_counts = 0;
+
+    for pattern in patterns {
+        possible_counts += recurse_possible(&pattern, 0, &towels, max_stripes, &mut HashMap::new());
+    }
+
+    println!(
+        "There are {} designs that are possible, all permutations included",
+        possible_counts
+    );
+
+    Ok(())
 }
