@@ -54,5 +54,42 @@ pub fn first_star() -> Result<(), Box<dyn Error + 'static>> {
 }
 
 pub fn second_star() -> Result<(), Box<dyn Error + 'static>> {
-    unimplemented!("Star 2 not ready");
+    let connections = get_input();
+    let mut nodes: HashMap<String, Vec<String>> = HashMap::new();
+
+    for link in connections {
+        let left = nodes.entry(link.0.clone()).or_default();
+        left.push(link.1.clone());
+        let right = nodes.entry(link.1).or_default();
+        right.push(link.0);
+    }
+
+    let mut password = String::new();
+
+    let mut visited: HashSet<String> = HashSet::new();
+
+    for (origin, network) in nodes.iter() {
+        for start in network {
+            let mut connected = vec![origin, start];
+            for other in network.iter().filter(|elem| *elem != start) {
+                let other_network = nodes.get(other).unwrap();
+                if connected.iter().all(|elem| other_network.contains(elem)) {
+                    connected.push(other);
+                }
+            }
+
+            connected.sort();
+            let signature = connected.into_iter().join(",");
+            if visited.insert(signature.to_string()) && signature.len() > password.len() {
+                password = signature;
+            }
+        }
+    }
+
+    println!(
+        "The password to the greatest LAN party ever is: {}",
+        password
+    );
+
+    Ok(())
 }
